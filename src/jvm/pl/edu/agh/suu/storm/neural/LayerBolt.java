@@ -10,6 +10,9 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+/**
+ * This class is an Apache Storm bolt for handling neural network hidden layer.
+ */
 public class LayerBolt extends BaseRichBolt {
 
 	private static final long serialVersionUID = -7165958052675311644L;
@@ -19,6 +22,13 @@ public class LayerBolt extends BaseRichBolt {
 	private int layerSize;
 	private int layerId;
 	
+	/**
+	 * Creates a new bolt for handling hidden layer.
+	 * @param inputSize size of the previous layer
+	 * @param layerSize size of this layer (number of neurons)
+	 * @param alpha neural network learning rate
+	 * @param layerId number of the layer in the neural network
+	 */
 	public LayerBolt(int inputSize, int layerSize, double alpha, int layerId) {
 		this.layer = new Layer(inputSize, layerSize, alpha);
 		this.layerSize = layerSize;
@@ -50,6 +60,7 @@ public class LayerBolt extends BaseRichBolt {
 			layer.updateWeights(trainingSetSize);
 			_collector.emit(new Values(TupleHelper.ITERATION_END, 0, layerId, elementId, trainingSetSize));
 		}
+		_collector.ack(tuple);
 	}
 	
 	@Override

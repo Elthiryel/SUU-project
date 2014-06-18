@@ -55,6 +55,7 @@ public class InputBolt extends BaseRichBolt {
 				++valuesIter;
 			}
 		}
+		_collector.ack(tuple);
 	}
 	
 	@Override

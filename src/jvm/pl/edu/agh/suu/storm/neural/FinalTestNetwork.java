@@ -2,12 +2,16 @@ package pl.edu.agh.suu.storm.neural;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
+import backtype.storm.StormSubmitter;
+import backtype.storm.generated.AlreadyAliveException;
+import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.BoltDeclarer;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.utils.Utils;
 
 public class FinalTestNetwork {
 
-	private static double ALPHA = 0.1d;
+	private static double ALPHA = 0.03d;
 	
 	public static void main(String[] args) {
 		
@@ -25,13 +29,20 @@ public class FinalTestNetwork {
 		
 		Config conf = new Config();
 		conf.setDebug(false);
-		conf.setNumWorkers(4);
+		conf.setNumWorkers(8);
 		
-		LocalCluster cluster = new LocalCluster();
-		cluster.submitTopology("test", conf, builder.createTopology());
-//		Utils.sleep(100000);
-//		cluster.killTopology("test");
-//		cluster.shutdown();
+		try {
+			//LocalCluster cluster = new LocalCluster();
+			//cluster.submitTopology("myNeuralNetwork", conf, builder.createTopology());
+			StormSubmitter.submitTopology("myNeuralNetwork", conf, builder.createTopology());
+			//Utils.sleep(100000);
+			//cluster.killTopology("test");
+			//cluster.shutdown();
+		} catch (InvalidTopologyException e) {
+			e.printStackTrace();
+		} catch (AlreadyAliveException e) {
+			e.printStackTrace();
+		}
 		
 	}
 }
