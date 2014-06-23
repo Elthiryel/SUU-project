@@ -16,6 +16,7 @@ public class TupleHelper {
 	public static final String ITERATION_START = "iteration_start";
 	public static final String ITERATION_END = "iteration_end";
 	public static final String GLOBAL_BEGIN = "global_begin";
+	public static final String DATA_TRANSFERRED = "data_transferred";
 	
 	/**
 	 * Returns type of the tuple.

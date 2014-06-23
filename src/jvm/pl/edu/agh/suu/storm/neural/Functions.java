@@ -28,7 +28,7 @@ public class Functions {
 	 * @return random neuron weight
 	 */
 	public static double randomWeight() {
-		return random.nextDouble();
+		return 2 * (random.nextDouble() - 0.5);
 	}
 	
 	/**
@@ -72,8 +72,8 @@ public class Functions {
 			for (int j = 0; j < 4; ++j) {
 				row[j] = random.nextDouble();
 			}
-			double decisionFactor = (row[0] * row[0]) + 5 * (row[1]) - 2 * (row[2] * row[2] * row[2]) + Math.sqrt(row[3]);
-			if (decisionFactor > 2.5d) {
+			double decisionFactor = 3 * (row[0] * row[0]) + (Math.exp(row[1])) - 2 * (row[2] * row[2] * row[2]) + 5 * Math.sqrt(row[3]);
+			if (decisionFactor > 4.86d) {
 				row[4] = 1.0d;
 			} else {
 				row[4] = 0.0d;

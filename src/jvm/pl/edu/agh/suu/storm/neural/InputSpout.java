@@ -15,20 +15,7 @@ public class InputSpout extends BaseRichSpout {
 	
 	private SpoutOutputCollector _collector;
 	
-	private double[] arr0 = { 0, 0.0d };
-	private double[] arr1 = { 1, 1.0d };
-	private double[] arr2 = { 2, 1.0d };
-	private double[] arr3 = { 3, 0.0d };
-	
 	private int iter = 0;
-	
-	private Values[] values = {
-			new Values(TupleHelper.DATA, 2, 0, 0, arr0),
-			new Values(TupleHelper.DATA, 2, 0, 1, arr1),
-			new Values(TupleHelper.DATA, 2, 0, 2, arr2),
-			new Values(TupleHelper.DATA, 2, 0, 3, arr3),
-			new Values(TupleHelper.GLOBAL_BEGIN, 0, 0, 0, 0)
-	};
 	
 	@SuppressWarnings("rawtypes")
 	@Override
@@ -38,8 +25,8 @@ public class InputSpout extends BaseRichSpout {
 	
 	@Override
 	public void nextTuple() {
-		if (iter < 5) {
-			_collector.emit(values[iter]);
+		if (iter < 1) {
+			_collector.emit(new Values(TupleHelper.GLOBAL_BEGIN, 0, 0, 0, 0));
 			++iter;
 		}
 	}

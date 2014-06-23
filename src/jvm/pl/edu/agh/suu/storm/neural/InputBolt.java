@@ -1,6 +1,7 @@
 package pl.edu.agh.suu.storm.neural;
 
 import java.util.Map;
+import java.util.Random;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -15,19 +16,17 @@ public class InputBolt extends BaseRichBolt {
 	private static final long serialVersionUID = -3473671857504101756L;
 	
 	private OutputCollector _collector;
+	private int globalIter = 0;
 	private int valuesIter = 0;
+	private int dataSize;
+	private int seed;
 	
-	private double[] input0 = { 0.0d, 0.0d };
-	private double[] input1 = { 0.0d, 1.0d };
-	private double[] input2 = { 1.0d, 0.0d };
-	private double[] input3 = { 1.0d, 1.0d };
+	private double[][] data;
 	
-	private Values[] values = {
-			new Values(TupleHelper.FORWARD, 2, 0, 0, input0),
-			new Values(TupleHelper.FORWARD, 2, 0, 1, input1),
-			new Values(TupleHelper.FORWARD, 2, 0, 2, input2),
-			new Values(TupleHelper.FORWARD, 2, 0, 3, input3),
-	};
+	public InputBolt(int dataSize) {
+		this.dataSize = dataSize;
+		this.seed = (new Random()).nextInt();
+	}
 	
 	@SuppressWarnings("rawtypes")
 	@Override
@@ -35,25 +34,35 @@ public class InputBolt extends BaseRichBolt {
 		_collector = collector;
 	}
 	
+	private void emitData() {
+		int from = globalIter * dataSize;
+		int to = from + dataSize;
+		globalIter = (globalIter + 1) % 10;
+		data = Functions.generateRandomData(from, to, seed);
+		for (int i = 0; i < dataSize; ++i) {
+			double[] array = { i, data[i][4] };
+			_collector.emit(new Values(TupleHelper.DATA, 4, 0, i, array));
+		}
+	}
+	
 	@Override
 	public void execute(Tuple tuple) {
 		String type = TupleHelper.getType(tuple);
 		if (type.equals(TupleHelper.GLOBAL_BEGIN)) {
-			_collector.emit(new Values(TupleHelper.ITERATION_START, 2, 0, 0, 0));
-			valuesIter = 0;
-			_collector.emit(values[valuesIter]);
-			++valuesIter;
-		} else if (type.equals(TupleHelper.BACKWARD)) {
-			if (valuesIter < 4) {
-				_collector.emit(values[valuesIter]);
+			emitData();
+		} else if (type.equals(TupleHelper.BACKWARD) && TupleHelper.getLayerId(tuple) == 1) {
+			if (valuesIter < dataSize) {
+				_collector.emit(new Values(TupleHelper.FORWARD, 4, 0, valuesIter, data[valuesIter]));
 				++valuesIter;
 			} else {
-				_collector.emit(new Values(TupleHelper.ITERATION_END, 2, 0, 0, 4));
-				valuesIter = 0;
-				_collector.emit(new Values(TupleHelper.ITERATION_START, 2, 0, 0, 0));
-				_collector.emit(values[valuesIter]);
-				++valuesIter;
+				_collector.emit(new Values(TupleHelper.ITERATION_END, 4, 0, 0, dataSize));
+				emitData();
 			}
+		} else if (type.equals(TupleHelper.DATA_TRANSFERRED)) {
+			_collector.emit(new Values(TupleHelper.ITERATION_START, 4, 0, 0, 0));
+			valuesIter = 0;
+			_collector.emit(new Values(TupleHelper.FORWARD, 4, 0, valuesIter, data[valuesIter]));
+			++valuesIter;
 		}
 		_collector.ack(tuple);
 	}

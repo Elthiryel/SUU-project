@@ -20,6 +20,10 @@ public class LastNeuronBolt extends BaseRichBolt {
 	private OutputCollector _collector;
 	private LastNeuron neuron;
 	private int layerId;
+	private int dataSize;
+	private double error;
+	private int foundValid;
+	private int iteration;
 	
 	/**
 	 * Creates new bolt for handling single neuron output layer.
@@ -29,9 +33,11 @@ public class LastNeuronBolt extends BaseRichBolt {
 	 * @param alpha neural network learning rate
 	 * @param layerId number of the layer in the neural network
 	 */
-	public LastNeuronBolt(int inputSize, double weights[], double alpha, int layerId) {
+	public LastNeuronBolt(int inputSize, double weights[], double alpha, int layerId, int dataSize) {
 		this.neuron = new LastNeuron(inputSize, weights, alpha);
 		this.layerId = layerId;
+		this.dataSize = dataSize;
+		this.iteration = 0;
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -55,20 +61,35 @@ public class LastNeuronBolt extends BaseRichBolt {
 					System.out.println("Value not there yet.");
 				}
 			}
-			System.out.println("LAST_NEURON_BOLT | element: " + elementId + ", result: " + result + ", expected: " + expectedValue);
+			if (iteration % 20 == 0 && elementId < 20)
+				System.out.println("LAST_NEURON_BOLT | element: " + elementId + ", result: " + result + ", expected: " + expectedValue);
+			double cost = (-expectedValue * Math.log(result)) - ((1 - expectedValue) * (Math.log(1 - result)));
+			error += cost;
+			if (Math.abs(result - expectedValue) < 0.5d) {
+				++foundValid;
+			}
 			double[] propagationResult = neuron.propagateBackward(elementId);
 			double[][] toSend = new double[1][];
 			toSend[0] = propagationResult;
 			_collector.emit(new Values(TupleHelper.BACKWARD, 1, layerId, elementId, toSend));
 		} else if (type.equals(TupleHelper.ITERATION_START) && otherLayerId + 1 == layerId) {
+			error = 0.0d;
+			foundValid = 0;
 			neuron.resetDelta();
 		} else if (type.equals(TupleHelper.ITERATION_END) && otherLayerId + 1 == layerId) {
 			int trainingSetSize = TupleHelper.getIterationEndData(tuple);
+			error /= trainingSetSize;
+			//System.out.println("LAST_NEURON_BOLT | iteration: " + iteration + ", error: " + error + ", valid: " + foundValid);
+			ResultLogger.logResult(iteration, error, foundValid);
+			++iteration;
 			neuron.updateWeights(trainingSetSize);
 		} else if (type.equals(TupleHelper.DATA)) {
 			int key = TupleHelper.getDataKey(tuple);
 			double value = TupleHelper.getDataValue(tuple);
 			neuron.setExpectedValue(value, key);
+			if (key + 1 == this.dataSize) {
+				_collector.emit(new Values(TupleHelper.DATA_TRANSFERRED, 0, 0, 0, 0));
+			}
 		}
 		_collector.ack(tuple);
 	}
